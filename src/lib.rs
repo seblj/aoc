@@ -1,3 +1,6 @@
+// Honorable mention to @sivertjoe for these great generic functions
+// https://github.com/sivertjoe/Advent-of-Code-2021
+
 pub fn read_input<T, P>(path: P) -> Vec<T>
 where
     T: std::str::FromStr,
