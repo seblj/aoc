@@ -1,9 +1,21 @@
+use itertools::Itertools;
+
+fn find_first_unique(input: &[String], size: usize) -> usize {
+    input[0]
+        .chars()
+        .collect::<Vec<char>>()
+        .windows(size)
+        .position(|x| x.into_iter().all_unique())
+        .unwrap()
+        + size
+}
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    find_first_unique(input, 4)
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    find_first_unique(input, 14)
 }
 
 fn main() {
