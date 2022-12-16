@@ -1,3 +1,7 @@
-### AOC 2021
+### Advent of Code🎅
 
-This is my attempt on solving aoc 2021 in Rust. Didn't know any Rust before this, so did this for fun and to dive a little bit into Rust.
+Some of my solutions to advent of code
+
+#### [2021 🦀](https://github.com/seblj/aoc/tree/master/year_2021/src/days)
+
+#### [2022 🦀](https://github.com/seblj/aoc/tree/master/year_2022/src/bin)
