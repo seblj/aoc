@@ -1,9 +1,29 @@
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    let f = |i: usize| {
+        input[i]
+            .split_whitespace()
+            .filter_map(|x| x.parse::<usize>().ok())
+    };
+
+    f(0).zip(f(1))
+        .map(|(time, distance)| (0..time).filter(|i| (i * (time - i)) > distance).count())
+        .product()
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    let f = |i: usize| {
+        input[i]
+            .split_whitespace()
+            .filter(|s| s.parse::<i32>().is_ok())
+            .collect::<String>()
+            .parse::<usize>()
+            .unwrap()
+    };
+
+    let time = f(0);
+    let distance = f(1);
+
+    (0..time).filter(|i| (i * (time - i)) > distance).count()
 }
 
 fn main() {
