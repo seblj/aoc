@@ -49,47 +49,33 @@ trait FromChar {
     fn from_char(c: char) -> Self;
 }
 
-impl FromChar for CardPartOne {
-    fn from_char(c: char) -> Self {
-        match c {
-            '2' => Self::Two,
-            '3' => Self::Three,
-            '4' => Self::Four,
-            '5' => Self::Five,
-            '6' => Self::Six,
-            '7' => Self::Seven,
-            '8' => Self::Eight,
-            '9' => Self::Nine,
-            'T' => Self::T,
-            'J' => Self::J,
-            'Q' => Self::Q,
-            'K' => Self::K,
-            'A' => Self::A,
-            _ => unreachable!(),
+macro_rules! impl_from_char {
+    ($ty:tt) => {
+        impl FromChar for $ty {
+            fn from_char(c: char) -> Self {
+                match c {
+                    '2' => Self::Two,
+                    '3' => Self::Three,
+                    '4' => Self::Four,
+                    '5' => Self::Five,
+                    '6' => Self::Six,
+                    '7' => Self::Seven,
+                    '8' => Self::Eight,
+                    '9' => Self::Nine,
+                    'T' => Self::T,
+                    'J' => Self::J,
+                    'Q' => Self::Q,
+                    'K' => Self::K,
+                    'A' => Self::A,
+                    _ => unreachable!(),
+                }
+            }
         }
-    }
+    };
 }
 
-impl FromChar for CardPartTwo {
-    fn from_char(c: char) -> Self {
-        match c {
-            '2' => Self::Two,
-            '3' => Self::Three,
-            '4' => Self::Four,
-            '5' => Self::Five,
-            '6' => Self::Six,
-            '7' => Self::Seven,
-            '8' => Self::Eight,
-            '9' => Self::Nine,
-            'T' => Self::T,
-            'J' => Self::J,
-            'Q' => Self::Q,
-            'K' => Self::K,
-            'A' => Self::A,
-            _ => unreachable!(),
-        }
-    }
-}
+impl_from_char!(CardPartOne);
+impl_from_char!(CardPartTwo);
 
 #[derive(Debug, Eq, PartialEq)]
 struct Hand<T> {
@@ -131,7 +117,10 @@ where
     }
 }
 
-impl<T> Hand<T> {
+impl<T> Hand<T>
+where
+    T: std::cmp::Eq,
+{
     fn new(cards: [T; 5], bid: usize) -> Self {
         Hand {
             cards,
@@ -139,14 +128,37 @@ impl<T> Hand<T> {
             hand_type: None,
         }
     }
+
+    fn set_hand(&mut self, dedup: &mut [T], duplicates: &mut [T]) {
+        match (dedup.len(), duplicates.len()) {
+            (5, 0) => self.hand_type = Some(HandType::HighCard),
+            (1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
+            (4, 1) => self.hand_type = Some(HandType::OnePair),
+            (2, 3) => {
+                if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
+                    self.hand_type = Some(HandType::FourOfAKind)
+                } else {
+                    self.hand_type = Some(HandType::FullHouse)
+                }
+            }
+            (3, 2) => {
+                if duplicates[0] == duplicates[1] {
+                    self.hand_type = Some(HandType::ThreeOfAKind)
+                } else {
+                    self.hand_type = Some(HandType::TwoPair)
+                }
+            }
+            _ => unreachable!(),
+        };
+    }
 }
 
 impl Hand<CardPartTwo> {
-    fn set_hand(&mut self) {
+    fn set_custom_hand(&mut self) {
         let mut sorted_cards: Vec<_> = self
             .cards
-            .iter()
-            .filter(|c| **c != CardPartTwo::J)
+            .into_iter()
+            .filter(|c| *c != CardPartTwo::J)
             .collect();
 
         sorted_cards.sort();
@@ -176,54 +188,18 @@ impl Hand<CardPartTwo> {
             }
 
             // Default cases. No jokers
-            (0, 5, 0) => self.hand_type = Some(HandType::HighCard),
-            (0, 1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
-            (0, 4, 1) => self.hand_type = Some(HandType::OnePair),
-            (0, 2, 3) => {
-                if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
-                    self.hand_type = Some(HandType::FourOfAKind)
-                } else {
-                    self.hand_type = Some(HandType::FullHouse)
-                }
-            }
-            (0, 3, 2) => {
-                if duplicates[0] == duplicates[1] {
-                    self.hand_type = Some(HandType::ThreeOfAKind)
-                } else {
-                    self.hand_type = Some(HandType::TwoPair)
-                }
-            }
-            _ => unreachable!(),
+            _ => self.set_hand(dedup, duplicates),
         };
     }
 }
 
 impl Hand<CardPartOne> {
-    fn set_hand(&mut self) {
+    fn set_custom_hand(&mut self) {
         let mut sorted_cards = self.cards;
         sorted_cards.sort();
 
         let (dedup, duplicates) = sorted_cards.partition_dedup();
-        match (dedup.len(), duplicates.len()) {
-            (5, 0) => self.hand_type = Some(HandType::HighCard),
-            (1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
-            (4, 1) => self.hand_type = Some(HandType::OnePair),
-            (2, 3) => {
-                if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
-                    self.hand_type = Some(HandType::FourOfAKind)
-                } else {
-                    self.hand_type = Some(HandType::FullHouse)
-                }
-            }
-            (3, 2) => {
-                if duplicates[0] == duplicates[1] {
-                    self.hand_type = Some(HandType::ThreeOfAKind)
-                } else {
-                    self.hand_type = Some(HandType::TwoPair)
-                }
-            }
-            _ => unreachable!(),
-        };
+        self.set_hand(dedup, duplicates);
     }
 }
 
@@ -235,7 +211,7 @@ fn task_one(input: &[String]) -> usize {
             let mut cards = [CardPartOne::Two; 5];
             fill_cards(&mut cards, s);
             let mut hand = Hand::new(cards, bid.parse::<usize>().unwrap());
-            hand.set_hand();
+            hand.set_custom_hand();
             hand
         })
         .collect();
@@ -257,7 +233,7 @@ fn task_two(input: &[String]) -> usize {
             let mut cards = [CardPartTwo::Two; 5];
             fill_cards(&mut cards, s);
             let mut hand = Hand::new(cards, bid.parse::<usize>().unwrap());
-            hand.set_hand();
+            hand.set_custom_hand();
             hand
         })
         .collect();
