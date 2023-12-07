@@ -1,5 +1,4 @@
 #![feature(slice_partition_dedup)]
-use std::{cmp::Ordering, str::FromStr};
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
 enum HandType {
@@ -14,6 +13,23 @@ enum HandType {
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
 enum CardPartOne {
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    T,
+    J,
+    Q,
+    K,
+    A,
+}
+
+#[derive(Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
+enum CardPartTwo {
     J,
     Two,
     Three,
@@ -29,117 +45,199 @@ enum CardPartOne {
     A,
 }
 
+trait FromChar {
+    fn from_char(c: char) -> Self;
+}
+
+impl FromChar for CardPartOne {
+    fn from_char(c: char) -> Self {
+        match c {
+            '2' => Self::Two,
+            '3' => Self::Three,
+            '4' => Self::Four,
+            '5' => Self::Five,
+            '6' => Self::Six,
+            '7' => Self::Seven,
+            '8' => Self::Eight,
+            '9' => Self::Nine,
+            'T' => Self::T,
+            'J' => Self::J,
+            'Q' => Self::Q,
+            'K' => Self::K,
+            'A' => Self::A,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl FromChar for CardPartTwo {
+    fn from_char(c: char) -> Self {
+        match c {
+            '2' => Self::Two,
+            '3' => Self::Three,
+            '4' => Self::Four,
+            '5' => Self::Five,
+            '6' => Self::Six,
+            '7' => Self::Seven,
+            '8' => Self::Eight,
+            '9' => Self::Nine,
+            'T' => Self::T,
+            'J' => Self::J,
+            'Q' => Self::Q,
+            'K' => Self::K,
+            'A' => Self::A,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
-struct Hand {
-    cards: [CardPartOne; 5],
+struct Hand<T> {
+    cards: [T; 5],
     bid: usize,
-    hand_type: HandType,
+    hand_type: Option<HandType>,
 }
 
-impl Ord for Hand {
+impl<T> Ord for Hand<T>
+where
+    T: std::cmp::Eq + std::cmp::Ord,
+{
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.hand_type.cmp(&other.hand_type) {
-            Ordering::Equal => self.cards.iter().cmp(other.cards.iter()),
-            Ordering::Less => Ordering::Less,
-            Ordering::Greater => Ordering::Greater,
-        }
+        self.hand_type
+            .cmp(&other.hand_type)
+            .then_with(|| self.cards.iter().cmp(other.cards.iter()))
     }
 }
 
-impl PartialOrd for Hand {
+impl<T> PartialOrd for Hand<T>
+where
+    T: std::cmp::PartialEq + std::cmp::Ord,
+{
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+        Some(
+            self.hand_type
+                .cmp(&other.hand_type)
+                .then_with(|| self.cards.iter().cmp(other.cards.iter())),
+        )
     }
 }
 
-impl FromStr for Hand {
-    type Err = ();
+fn fill_cards<T>(cards: &mut [T; 5], s: &str)
+where
+    T: FromChar,
+{
+    for (idx, c) in s.chars().enumerate() {
+        cards[idx] = T::from_char(c);
+    }
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (card_str, bid) = s.split_once(' ').unwrap();
-        let mut cards = [CardPartOne::A; 5];
-        for (idx, c) in card_str.chars().enumerate() {
-            cards[idx] = match c {
-                '2' => CardPartOne::Two,
-                '3' => CardPartOne::Three,
-                '4' => CardPartOne::Four,
-                '5' => CardPartOne::Five,
-                '6' => CardPartOne::Six,
-                '7' => CardPartOne::Seven,
-                '8' => CardPartOne::Eight,
-                '9' => CardPartOne::Nine,
-                'T' => CardPartOne::T,
-                'J' => CardPartOne::J,
-                'Q' => CardPartOne::Q,
-                'K' => CardPartOne::K,
-                'A' => CardPartOne::A,
-                _ => unreachable!(),
-            };
+impl<T> Hand<T> {
+    fn new(cards: [T; 5], bid: usize) -> Self {
+        Hand {
+            cards,
+            bid,
+            hand_type: None,
         }
+    }
+}
 
-        let v = cards;
-        let mut sorted_cards: Vec<_> = v.iter().filter(|c| **c != CardPartOne::J).collect();
-        let filtered_cards_len = sorted_cards.len();
+impl Hand<CardPartTwo> {
+    fn set_hand(&mut self) {
+        let mut sorted_cards: Vec<_> = self
+            .cards
+            .iter()
+            .filter(|c| **c != CardPartTwo::J)
+            .collect();
+
+        sorted_cards.sort();
+        let number_of_jokers = 5 - sorted_cards.len();
+
+        let (dedup, duplicates) = sorted_cards.partition_dedup();
+        match (number_of_jokers, dedup.len(), duplicates.len()) {
+            (5, _, _) => self.hand_type = Some(HandType::FiveOfAKind),
+            (4, _, _) => self.hand_type = Some(HandType::FiveOfAKind),
+
+            (3, 2, 0) => self.hand_type = Some(HandType::FourOfAKind),
+            (3, 1, 1) => self.hand_type = Some(HandType::FiveOfAKind),
+
+            (2, 3, 0) => self.hand_type = Some(HandType::ThreeOfAKind),
+            (2, 2, 1) => self.hand_type = Some(HandType::FourOfAKind),
+            (2, 1, 2) => self.hand_type = Some(HandType::FiveOfAKind),
+
+            (1, 4, 0) => self.hand_type = Some(HandType::OnePair),
+            (1, 3, 1) => self.hand_type = Some(HandType::ThreeOfAKind),
+            (1, 1, 3) => self.hand_type = Some(HandType::FiveOfAKind),
+            (1, 2, 2) => {
+                if duplicates[0] == duplicates[1] {
+                    self.hand_type = Some(HandType::FourOfAKind)
+                } else {
+                    self.hand_type = Some(HandType::FullHouse)
+                }
+            }
+
+            // Default cases. No jokers
+            (0, 5, 0) => self.hand_type = Some(HandType::HighCard),
+            (0, 1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
+            (0, 4, 1) => self.hand_type = Some(HandType::OnePair),
+            (0, 2, 3) => {
+                if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
+                    self.hand_type = Some(HandType::FourOfAKind)
+                } else {
+                    self.hand_type = Some(HandType::FullHouse)
+                }
+            }
+            (0, 3, 2) => {
+                if duplicates[0] == duplicates[1] {
+                    self.hand_type = Some(HandType::ThreeOfAKind)
+                } else {
+                    self.hand_type = Some(HandType::TwoPair)
+                }
+            }
+            _ => unreachable!(),
+        };
+    }
+}
+
+impl Hand<CardPartOne> {
+    fn set_hand(&mut self) {
+        let mut sorted_cards = self.cards;
         sorted_cards.sort();
 
         let (dedup, duplicates) = sorted_cards.partition_dedup();
-        let hand_type = match (filtered_cards_len, dedup.len(), duplicates.len()) {
-            (0, _, _) | (1, _, _) => HandType::FiveOfAKind,
-            (2, 4, 1) => HandType::OnePair,
-
-            // Default cases. No jokers
-            (5, 1, 4) => HandType::FiveOfAKind,
-            (5, 4, 1) => HandType::OnePair,
-            (5, 5, 0) => HandType::HighCard,
-            (5, 2, 3) => {
+        match (dedup.len(), duplicates.len()) {
+            (5, 0) => self.hand_type = Some(HandType::HighCard),
+            (1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
+            (4, 1) => self.hand_type = Some(HandType::OnePair),
+            (2, 3) => {
                 if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
-                    HandType::FourOfAKind
+                    self.hand_type = Some(HandType::FourOfAKind)
                 } else {
-                    HandType::FullHouse
+                    self.hand_type = Some(HandType::FullHouse)
                 }
             }
-            (5, 3, 2) => {
+            (3, 2) => {
                 if duplicates[0] == duplicates[1] {
-                    HandType::ThreeOfAKind
+                    self.hand_type = Some(HandType::ThreeOfAKind)
                 } else {
-                    HandType::TwoPair
+                    self.hand_type = Some(HandType::TwoPair)
                 }
             }
-            // (2, 3) => {
-            //     if duplicates[0] == duplicates[1] && duplicates[1] == duplicates[2] {
-            //         HandType::FourOfAKind
-            //     } else {
-            //         HandType::FullHouse
-            //     }
-            // }
-            // (3, 2) => {
-            //     if duplicates[0] == duplicates[1] {
-            //         HandType::ThreeOfAKind
-            //     } else {
-            //         HandType::TwoPair
-            //     }
-            // }
-            // (4, 1) => HandType::OnePair,
-            // (5, 0) => HandType::HighCard,
             _ => unreachable!(),
         };
-
-        Ok(Self {
-            cards,
-            hand_type,
-            bid: bid.parse::<usize>().unwrap(),
-        })
     }
 }
 
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
-}
-
-fn task_two(input: &[String]) -> usize {
     let mut hands: Vec<_> = input
         .iter()
-        .filter_map(|s| Hand::from_str(s).ok())
+        .map(|s| {
+            let (s, bid) = s.split_once(' ').unwrap();
+            let mut cards = [CardPartOne::Two; 5];
+            fill_cards(&mut cards, s);
+            let mut hand = Hand::new(cards, bid.parse::<usize>().unwrap());
+            hand.set_hand();
+            hand
+        })
         .collect();
 
     hands.sort();
@@ -149,7 +247,28 @@ fn task_two(input: &[String]) -> usize {
         .enumerate()
         .map(|(i, hand)| (i + 1) * hand.bid)
         .sum()
-    // unimplemented!()
+}
+
+fn task_two(input: &[String]) -> usize {
+    let mut hands: Vec<_> = input
+        .iter()
+        .map(|s| {
+            let (s, bid) = s.split_once(' ').unwrap();
+            let mut cards = [CardPartTwo::Two; 5];
+            fill_cards(&mut cards, s);
+            let mut hand = Hand::new(cards, bid.parse::<usize>().unwrap());
+            hand.set_hand();
+            hand
+        })
+        .collect();
+
+    hands.sort();
+
+    hands
+        .iter()
+        .enumerate()
+        .map(|(i, hand)| (i + 1) * hand.bid)
+        .sum()
 }
 
 fn main() {
