@@ -1,5 +1,3 @@
-#![feature(slice_partition_dedup)]
-
 #[derive(Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
 enum HandType {
     HighCard,
@@ -100,11 +98,7 @@ where
     T: std::cmp::PartialEq + std::cmp::Ord,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(
-            self.hand_type
-                .cmp(&other.hand_type)
-                .then_with(|| self.cards.iter().cmp(other.cards.iter())),
-        )
+        Some(std::cmp::Ord::cmp(self, other))
     }
 }
 
@@ -129,7 +123,7 @@ where
         }
     }
 
-    fn set_hand(&mut self, dedup: &mut [T], duplicates: &mut [T]) {
+    fn set_hand(&mut self, dedup: &[T], duplicates: &[T]) {
         match (dedup.len(), duplicates.len()) {
             (5, 0) => self.hand_type = Some(HandType::HighCard),
             (1, 4) => self.hand_type = Some(HandType::FiveOfAKind),
@@ -164,7 +158,7 @@ impl Hand<CardPartTwo> {
         sorted_cards.sort();
         let number_of_jokers = 5 - sorted_cards.len();
 
-        let (dedup, duplicates) = sorted_cards.partition_dedup();
+        let (dedup, duplicates) = unique_and_dupes(&sorted_cards);
         match (number_of_jokers, dedup.len(), duplicates.len()) {
             (5, _, _) => self.hand_type = Some(HandType::FiveOfAKind),
             (4, _, _) => self.hand_type = Some(HandType::FiveOfAKind),
@@ -188,9 +182,22 @@ impl Hand<CardPartTwo> {
             }
 
             // Default cases. No jokers
-            _ => self.set_hand(dedup, duplicates),
+            _ => self.set_hand(&dedup, &duplicates),
         };
     }
+}
+
+fn unique_and_dupes<T: Eq + Clone>(cards: &[T]) -> (Vec<T>, Vec<T>) {
+    let mut unique = Vec::new();
+    let mut seen = Vec::new();
+    for card in cards {
+        if !unique.contains(card) {
+            unique.push(card.clone());
+        } else {
+            seen.push(card.clone());
+        }
+    }
+    (unique, seen)
 }
 
 impl Hand<CardPartOne> {
@@ -198,8 +205,8 @@ impl Hand<CardPartOne> {
         let mut sorted_cards = self.cards;
         sorted_cards.sort();
 
-        let (dedup, duplicates) = sorted_cards.partition_dedup();
-        self.set_hand(dedup, duplicates);
+        let (dedup, duplicates) = unique_and_dupes(&sorted_cards);
+        self.set_hand(&dedup, &duplicates);
     }
 }
 
