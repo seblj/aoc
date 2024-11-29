@@ -1,0 +1,30 @@
+#!/bin/bash
+
+TARGET=$1
+
+cd $TARGET
+deps=($(cargo tree -e normal --depth 1 -q | grep -E '├──|└──' | awk '{print $2}'))
+for folder in src/*; do
+    base=$(basename "$folder")
+    if [[ $base == day_* ]]; then
+        found=()
+
+        main="${folder}/main.rs"
+        for dep in "${deps[@]}"; do
+            if grep -q "$dep" "$main"; then
+                found+=("$dep")
+            fi
+        done
+
+        cargo new $base -q
+        mv $main "$base/src/main.rs"
+
+        cd $base
+        for dep in "${found[@]}"; do
+            cargo add $dep -q
+        done
+        cd -
+    fi
+done
+rm Cargo.*
+rm -rf src
