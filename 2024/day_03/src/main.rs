@@ -1,9 +1,43 @@
+use regex::Regex;
+
+const MUL: &str = r"mul\((?<left>[0-9]{1,3}),(?<right>[0-9]{1,3})\)";
+const DO: &str = r"(?<do>)do\(\)";
+const DONT: &str = r"(?<dont>)don't\(\)";
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    let re = Regex::new(MUL).unwrap();
+    let hay = input.iter().flat_map(|s| s.chars()).collect::<String>();
+
+    re.captures_iter(&hay)
+        .map(|c| c.extract())
+        .map(|(_, [left, right])| left.parse::<usize>().unwrap() + right.parse::<usize>().unwrap())
+        .sum()
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    let hay = input.iter().flat_map(|s| s.chars()).collect::<String>();
+
+    let re = Regex::new(&format!("{MUL}|{DO}|{DONT}")).unwrap();
+    let mut enabled = true;
+    let mut sum = 0;
+
+    for it in re.captures_iter(&hay) {
+        match it.get(0).unwrap().as_str() {
+            "don't()" => enabled = false,
+            "do()" => enabled = true,
+            s => {
+                let (left, right) = s.split_once(',').unwrap();
+                let left = left.replace("mul(", "").parse::<usize>().unwrap();
+                let right = right.replace(")", "").parse::<usize>().unwrap();
+
+                if enabled {
+                    sum += left * right;
+                }
+            }
+        }
+    }
+
+    sum
 }
 
 fn main() {
