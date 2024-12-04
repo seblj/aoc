@@ -1,9 +1,55 @@
+fn is_valid(chars: &[i32]) -> bool {
+    let num_pos = chars.windows(2).filter(|it| it[1] - it[0] >= 0).count();
+    let all_pos = num_pos >= chars.len() - 2;
+    chars.windows(2).all(|c| {
+        let at_most_three = c[0].abs_diff(c[1]) <= 3;
+        if all_pos {
+            at_most_three && c[1] - c[0] > 0
+        } else {
+            at_most_three && c[0] - c[1] > 0
+        }
+    })
+}
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    input
+        .iter()
+        .filter(|it| {
+            let chars: Vec<i32> = it
+                .split_whitespace()
+                .map(|c| c.parse::<i32>().unwrap())
+                .collect();
+
+            is_valid(&chars)
+        })
+        .count()
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    input
+        .iter()
+        .filter(|it| {
+            let chars: Vec<i32> = it
+                .split_whitespace()
+                .map(|c| c.parse::<i32>().unwrap())
+                .collect();
+
+            for (i, _) in chars.iter().enumerate() {
+                let mut cloned = chars.clone();
+
+                if is_valid(&cloned) {
+                    return true;
+                } else {
+                    cloned.remove(i);
+                    if is_valid(&cloned) {
+                        return true;
+                    }
+                }
+            }
+
+            false
+        })
+        .count()
 }
 
 fn main() {
