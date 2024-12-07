@@ -25,24 +25,22 @@ fn task_one(input: &[String]) -> usize {
 
     let mut sum = 0;
 
-    for w in 0..matrix.width() {
-        for h in 0..matrix.height() {
-            let current = matrix[(w, h)];
-            if current != b'X' {
-                continue;
-            }
-
-            let index = (w as i32, h as i32);
-
-            find_xmas(&matrix, index, b'X', Direction::Up).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::Down).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::Left).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::Right).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::UpLeft).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::UpRight).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::DownLeft).then(|| sum += 1);
-            find_xmas(&matrix, index, b'X', Direction::DownRight).then(|| sum += 1);
+    for (pos, _) in matrix.iter() {
+        let current = matrix[pos];
+        if current != b'X' {
+            continue;
         }
+
+        let index = (pos.0 as i32, pos.1 as i32);
+
+        find_xmas(&matrix, index, b'X', Direction::Up).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::Down).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::Left).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::Right).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::UpLeft).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::UpRight).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::DownLeft).then(|| sum += 1);
+        find_xmas(&matrix, index, b'X', Direction::DownRight).then(|| sum += 1);
     }
 
     sum
@@ -53,32 +51,30 @@ fn task_two(input: &[String]) -> usize {
 
     let mut sum = 0;
 
-    for w in 0..matrix.width() {
-        for h in 0..matrix.height() {
-            let current = matrix[(w, h)];
-            if current != b'A' {
-                continue;
-            }
+    for (pos, _) in matrix.iter() {
+        let current = matrix[pos];
+        if current != b'A' {
+            continue;
+        }
 
-            let index = (w as i32, h as i32);
+        let index = (pos.0 as i32, pos.1 as i32);
 
-            if let Some(c) = matrix.get(Direction::UpRight.to_index(index)) {
-                let opposite = match c {
-                    b'M' => b'S',
-                    b'S' => b'M',
-                    _ => continue,
+        if let Some(c) = matrix.get(Direction::UpRight.to_index(index)) {
+            let opposite = match c {
+                b'M' => b'S',
+                b'S' => b'M',
+                _ => continue,
+            };
+
+            if Some(&opposite) == matrix.get(Direction::DownLeft.to_index(index)) {
+                let down_right = Direction::DownRight.to_index(index);
+                let found = match matrix.get(Direction::UpLeft.to_index(index)) {
+                    Some(b'M') => matrix.get(down_right) == Some(&b'S'),
+                    Some(b'S') => matrix.get(down_right) == Some(&b'M'),
+                    _ => false,
                 };
 
-                if Some(&opposite) == matrix.get(Direction::DownLeft.to_index(index)) {
-                    let down_right = Direction::DownRight.to_index(index);
-                    let found = match matrix.get(Direction::UpLeft.to_index(index)) {
-                        Some(b'M') => matrix.get(down_right) == Some(&b'S'),
-                        Some(b'S') => matrix.get(down_right) == Some(&b'M'),
-                        _ => false,
-                    };
-
-                    found.then(|| sum += 1);
-                }
+                found.then(|| sum += 1);
             }
         }
     }

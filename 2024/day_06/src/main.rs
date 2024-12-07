@@ -4,17 +4,6 @@ use matrix::{Direction, Matrix};
 
 mod matrix;
 
-fn get_start_pos(matrix: &Matrix<u8>) -> (usize, usize) {
-    for w in 0..matrix.width() {
-        for h in 0..matrix.height() {
-            if matrix[(h, w)] == b'^' {
-                return (h, w);
-            }
-        }
-    }
-    unreachable!();
-}
-
 fn walk(
     matrix: &Matrix<u8>,
     visited: &mut HashSet<(usize, usize)>,
@@ -44,7 +33,7 @@ fn walk(
 
 fn task_one(input: &[String]) -> usize {
     let matrix = Matrix::from(input);
-    let starting_pos = get_start_pos(&matrix);
+    let (starting_pos, _) = matrix.iter().find(|c| *c.1 == b'^').unwrap();
     let mut visited = HashSet::from([starting_pos]);
 
     walk(

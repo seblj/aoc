@@ -3,6 +3,11 @@ pub struct Matrix<T> {
     dim: (usize, usize),
 }
 
+pub struct MatrixIter<'a, T> {
+    matrix: &'a Matrix<T>,
+    curr: (i32, i32),
+}
+
 #[derive(Debug)]
 pub enum Direction {
     Up,
@@ -33,6 +38,13 @@ impl Direction {
 impl<T> Matrix<T> {
     pub fn new(vec: Vec<T>, dim: (usize, usize)) -> Self {
         Matrix { dim, vec }
+    }
+
+    pub fn iter(&self) -> MatrixIter<T> {
+        MatrixIter {
+            matrix: self,
+            curr: (0, 0),
+        }
     }
 
     pub fn width(&self) -> usize {
@@ -70,6 +82,25 @@ impl<T> Matrix<T> {
             && (idx.0 as usize) < self.height()
             && idx.1 >= 0
             && (idx.1 as usize) < self.width()
+    }
+}
+
+impl<'a, T> Iterator for MatrixIter<'a, T> {
+    type Item = ((usize, usize), &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let right = (self.curr.0 + 1, self.curr.1);
+        let down = (0, self.curr.1 + 1);
+
+        if self.matrix.in_grid(right) {
+            self.curr = right;
+            Some(((right.0 as usize, right.1 as usize), &self.matrix[right]))
+        } else if self.matrix.in_grid(down) {
+            self.curr = down;
+            Some(((down.0 as usize, down.1 as usize), &self.matrix[down]))
+        } else {
+            None
+        }
     }
 }
 
