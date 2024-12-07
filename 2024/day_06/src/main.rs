@@ -4,10 +4,10 @@ use matrix::{Direction, Matrix};
 
 mod matrix;
 
-fn get_start_pos(matrix: &Matrix<char>) -> (usize, usize) {
+fn get_start_pos(matrix: &Matrix<u8>) -> (usize, usize) {
     for w in 0..matrix.width() {
         for h in 0..matrix.height() {
-            if matrix[(h, w)] == '^' {
+            if matrix[(h, w)] == b'^' {
                 return (h, w);
             }
         }
@@ -16,7 +16,7 @@ fn get_start_pos(matrix: &Matrix<char>) -> (usize, usize) {
 }
 
 fn walk(
-    matrix: &Matrix<char>,
+    matrix: &Matrix<u8>,
     visited: &mut HashSet<(usize, usize)>,
     curr: (i32, i32),
     dir: Direction,
@@ -27,7 +27,7 @@ fn walk(
 
     visited.insert((curr.0 as usize, curr.1 as usize));
 
-    if matrix.get(dir.to_index(curr)) == Some(&'#') {
+    if matrix.get(dir.to_index(curr)) == Some(&b'#') {
         let new_dir = match dir {
             Direction::Up => Direction::Right,
             Direction::Down => Direction::Left,
