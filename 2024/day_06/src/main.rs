@@ -1,5 +1,60 @@
+use std::collections::HashSet;
+
+use matrix::{Direction, Matrix};
+
+mod matrix;
+
+fn get_start_pos(matrix: &Matrix<char>) -> (usize, usize) {
+    for w in 0..matrix.width() {
+        for h in 0..matrix.height() {
+            if matrix[(h, w)] == '^' {
+                return (h, w);
+            }
+        }
+    }
+    unreachable!();
+}
+
+fn walk(
+    matrix: &Matrix<char>,
+    visited: &mut HashSet<(usize, usize)>,
+    curr: (i32, i32),
+    dir: Direction,
+) {
+    if !matrix.in_grid(curr) {
+        return;
+    }
+
+    visited.insert((curr.0 as usize, curr.1 as usize));
+
+    if matrix.get(dir.to_index(curr)) == Some(&'#') {
+        let new_dir = match dir {
+            Direction::Up => Direction::Right,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+            Direction::Right => Direction::Down,
+            _ => unreachable!(),
+        };
+
+        walk(matrix, visited, new_dir.to_index(curr), new_dir);
+    } else {
+        walk(matrix, visited, dir.to_index(curr), dir);
+    }
+}
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    let matrix = Matrix::from(input);
+    let starting_pos = get_start_pos(&matrix);
+    let mut visited = HashSet::from([starting_pos]);
+
+    walk(
+        &matrix,
+        &mut visited,
+        (starting_pos.0 as i32, starting_pos.1 as i32),
+        Direction::Up,
+    );
+
+    visited.len()
 }
 
 fn task_two(input: &[String]) -> usize {
