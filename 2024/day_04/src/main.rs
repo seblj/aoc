@@ -52,10 +52,7 @@ fn find_xmas(matrix: &Matrix<char>, pos: (i32, i32), prev: char, direction: Dire
 }
 
 fn task_one(input: &[String]) -> usize {
-    let matrix = Matrix::new(
-        input.iter().flat_map(|s| s.chars()).collect(),
-        (input[0].len(), input.len()),
-    );
+    let matrix = Matrix::from(input);
 
     let mut sum = 0;
 
@@ -83,10 +80,7 @@ fn task_one(input: &[String]) -> usize {
 }
 
 fn task_two(input: &[String]) -> usize {
-    let matrix = Matrix::new(
-        input.iter().flat_map(|s| s.chars()).collect(),
-        (input[0].len(), input.len()),
-    );
+    let matrix = Matrix::from(input);
 
     let mut sum = 0;
 

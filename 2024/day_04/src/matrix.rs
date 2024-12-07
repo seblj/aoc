@@ -66,6 +66,32 @@ impl<T> std::ops::Index<(usize, usize)> for Matrix<T> {
     }
 }
 
+impl From<&[String]> for Matrix<char> {
+    fn from(value: &[String]) -> Self {
+        Matrix::new(
+            value.iter().flat_map(|s| s.chars()).collect(),
+            (value[0].len(), value.len()),
+        )
+    }
+}
+
+impl TryFrom<&[String]> for Matrix<i32> {
+    type Error = ();
+
+    fn try_from(value: &[String]) -> Result<Self, Self::Error> {
+        let vec = value
+            .iter()
+            .flat_map(|s| s.chars().map(|c| c.to_digit(10).map(|it| it as i32)))
+            .collect::<Option<Vec<_>>>();
+
+        let Some(vec) = vec else {
+            return Err(());
+        };
+
+        Ok(Matrix::new(vec, (value[0].len(), value.len())))
+    }
+}
+
 macro_rules! impl_fmt {
     ($typ:ident,$lit:tt) => {
         impl<T: std::fmt::$typ> std::fmt::$typ for Matrix<T> {
