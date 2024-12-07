@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug)]
+#[derive(Default)]
 struct Page {
     before: HashMap<i32, HashSet<i32>>,
     after: HashMap<i32, HashSet<i32>>,
@@ -8,34 +8,20 @@ struct Page {
 }
 
 fn parse(input: &[String]) -> Page {
-    let mut page = Page {
-        before: HashMap::new(),
-        after: HashMap::new(),
-        updates: vec![],
-    };
+    let mut page = Page::default();
 
-    for line in input.iter() {
+    for line in input {
         if let Some((left, right)) = line.split_once('|') {
             let left = left.parse::<i32>().unwrap();
             let right = right.parse::<i32>().unwrap();
 
-            page.before
-                .entry(left)
-                .and_modify(|v| {
-                    v.insert(right);
-                })
-                .or_insert(HashSet::from([right]));
+            page.before.entry(left).or_default().insert(right);
 
-            page.after
-                .entry(right)
-                .and_modify(|v| {
-                    v.insert(left);
-                })
-                .or_insert(HashSet::from([left]));
+            page.after.entry(right).or_default().insert(left);
         } else {
             let numbers = line
                 .split(',')
-                .filter_map(|num| num.parse::<i32>().ok())
+                .flat_map(|num| num.parse::<i32>())
                 .collect::<Vec<_>>();
 
             if !numbers.is_empty() {
@@ -104,7 +90,7 @@ fn task_two(input: &[String]) -> usize {
     let page = parse(input);
     let (_, invalid_updates) = get_updates(&page);
 
-    let invalid_updates = invalid_updates
+    invalid_updates
         .into_iter()
         .map(|it| {
             let mut vec: Vec<i32> = vec![];
@@ -112,27 +98,15 @@ fn task_two(input: &[String]) -> usize {
                 let empty = HashSet::new();
                 let after = page.after.get(num).unwrap_or(&empty);
 
-                let mut index = 0;
-                let mut found = false;
-                for (i, it) in vec.iter().enumerate() {
-                    index = i;
-                    if !after.contains(it) {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    index = vec.len();
-                }
+                let index = vec
+                    .iter()
+                    .position(|it| after.contains(it))
+                    .unwrap_or(vec.len());
 
                 vec.insert(index, *num);
             }
             vec
         })
-        .collect::<Vec<_>>();
-
-    invalid_updates
-        .iter()
         .map(|it| it[(it.len() - 1) / 2] as usize)
         .sum()
 }
