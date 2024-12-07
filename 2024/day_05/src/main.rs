@@ -1,9 +1,140 @@
+use std::collections::{HashMap, HashSet};
+
+#[derive(Debug)]
+struct Page {
+    before: HashMap<i32, HashSet<i32>>,
+    after: HashMap<i32, HashSet<i32>>,
+    updates: Vec<Vec<i32>>,
+}
+
+fn parse(input: &[String]) -> Page {
+    let mut page = Page {
+        before: HashMap::new(),
+        after: HashMap::new(),
+        updates: vec![],
+    };
+
+    for line in input.iter() {
+        if let Some((left, right)) = line.split_once('|') {
+            let left = left.parse::<i32>().unwrap();
+            let right = right.parse::<i32>().unwrap();
+
+            page.before
+                .entry(left)
+                .and_modify(|v| {
+                    v.insert(right);
+                })
+                .or_insert(HashSet::from([right]));
+
+            page.after
+                .entry(right)
+                .and_modify(|v| {
+                    v.insert(left);
+                })
+                .or_insert(HashSet::from([left]));
+        } else {
+            let numbers = line
+                .split(',')
+                .filter_map(|num| num.parse::<i32>().ok())
+                .collect::<Vec<_>>();
+
+            if !numbers.is_empty() {
+                page.updates.push(numbers);
+            }
+        }
+    }
+
+    page
+}
+
+fn get_updates(page: &Page) -> (Vec<Vec<i32>>, Vec<Vec<i32>>) {
+    let mut valid_updates = vec![];
+    let mut invalid_updates = vec![];
+
+    for update in page.updates.iter() {
+        let mut valid = true;
+        for (i, num) in update.iter().enumerate() {
+            let (before, after) = update.split_at(i);
+            let before_set = HashSet::from_iter(before.iter().map(|it| it.to_owned()));
+            let after_set = HashSet::from_iter(after.iter().map(|it| it.to_owned()));
+
+            if let Some(allowed_before) = page.before.get(num) {
+                if !allowed_before
+                    .intersection(&before_set)
+                    .collect::<Vec<_>>()
+                    .is_empty()
+                {
+                    valid = false;
+                    continue;
+                }
+            }
+
+            if let Some(allowed_after) = page.after.get(num) {
+                if !allowed_after
+                    .intersection(&after_set)
+                    .collect::<Vec<_>>()
+                    .is_empty()
+                {
+                    valid = false;
+                    continue;
+                }
+            }
+        }
+        if valid {
+            valid_updates.push(update.to_vec());
+        } else {
+            invalid_updates.push(update.to_vec());
+        }
+    }
+
+    (valid_updates, invalid_updates)
+}
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    let page = parse(input);
+    let (valid_updates, _) = get_updates(&page);
+
+    valid_updates
+        .iter()
+        .map(|it| it[(it.len() - 1) / 2] as usize)
+        .sum()
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    let page = parse(input);
+    let (_, invalid_updates) = get_updates(&page);
+
+    let invalid_updates = invalid_updates
+        .into_iter()
+        .map(|it| {
+            let mut vec: Vec<i32> = vec![];
+            for num in it.iter() {
+                let empty = HashSet::new();
+                let after = page.after.get(num).unwrap_or(&empty);
+
+                let mut index = 0;
+                let mut found = false;
+                for (i, it) in vec.iter().enumerate() {
+                    index = i;
+                    if !after.contains(it) {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    index = vec.len();
+                }
+
+                vec.insert(index, *num);
+            }
+            vec
+        })
+        .collect::<Vec<_>>();
+
+    invalid_updates
+        .iter()
+        .map(|it| it[(it.len() - 1) / 2] as usize)
+        .sum()
 }
 
 fn main() {
