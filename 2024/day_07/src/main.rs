@@ -1,9 +1,83 @@
+fn solve_part1(nums: &[usize], target: usize, current: usize) -> bool {
+    if current > target {
+        return false;
+    }
+
+    if nums.is_empty() {
+        return current == target;
+    }
+
+    let (next_num, remaining_nums) = nums.split_at(1);
+    if solve_part1(remaining_nums, target, current + next_num[0]) {
+        return true;
+    }
+    if solve_part1(remaining_nums, target, current * next_num[0]) {
+        return true;
+    }
+
+    false
+}
+
 fn task_one(input: &[String]) -> usize {
-    unimplemented!()
+    input
+        .iter()
+        .filter_map(|it| {
+            let (test, rest) = it.split_once(':').unwrap();
+            let test = test.parse::<usize>().unwrap();
+            let rest = rest
+                .split_whitespace()
+                .map(|n| n.parse::<usize>().unwrap())
+                .collect::<Vec<_>>();
+
+            solve_part1(&rest[1..], test, rest[0]).then_some(test)
+        })
+        .sum()
+}
+
+fn solve_part2(nums: &[usize], target: usize, current: usize) -> bool {
+    if current > target {
+        return false;
+    }
+
+    if nums.is_empty() {
+        return current == target;
+    }
+
+    let (next_num, remaining_nums) = nums.split_at(1);
+
+    if solve_part2(
+        remaining_nums,
+        target,
+        format!("{}{}", current, next_num[0]).parse().unwrap(),
+    ) {
+        return true;
+    }
+
+    if solve_part2(remaining_nums, target, current + next_num[0]) {
+        return true;
+    }
+
+    if solve_part2(remaining_nums, target, current * next_num[0]) {
+        return true;
+    }
+
+    false
 }
 
 fn task_two(input: &[String]) -> usize {
-    unimplemented!()
+    input
+        .iter()
+        .filter_map(|it| {
+            let (test, rest) = it.split_once(':').unwrap();
+            let test = test.parse::<usize>().unwrap();
+            let rest = rest
+                .split_whitespace()
+                .map(|n| n.parse::<usize>().unwrap())
+                .collect::<Vec<_>>();
+
+            solve_part2(&rest[1..], test, rest[0]).then_some(test)
+        })
+        .sum()
 }
 
 fn main() {
